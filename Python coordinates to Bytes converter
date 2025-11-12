@@ -1,0 +1,45 @@
+# Python
+# Functions to encode two coordinates (x1, y1, x2, y2) into 5 bytes and decode them back
+
+def encode_two_coordinates(x1, y1, x2, y2):
+    # Ensure coordinates are within range
+    if not (0 <= x1 < 640) or not (0 <= y1 < 480):
+        raise ValueError("First coordinate out of bounds")
+    if not (0 <= x2 < 640) or not (0 <= y2 < 480):
+        raise ValueError("Second coordinate out of bounds")
+    
+    # Encode each (x, y) pair into 19 bits: x = 10 bits, y = 9 bits
+    encoded1 = (x1 << 9) | y1  # 19 bits
+    encoded2 = (x2 << 9) | y2  # 19 bits
+
+    # Merge two 19-bit integers into one 38-bit integer; shift first left by 19 bits
+    combined = (encoded1 << 19) | encoded2
+
+    # Convert to 5 bytes (40 bits), leave top 2 bits as 0 padding
+    encoded_bytes = combined.to_bytes(5, byteorder='big')
+    return encoded_bytes
+
+def decode_two_coordinates(encoded_bytes):
+    # Convert 5 bytes back to 40-bit integer
+    combined = int.from_bytes(encoded_bytes, byteorder='big')
+
+    # Mask and extract each 19-bit coordinate pair
+    mask_19bit = (1 << 19) - 1  # 0x7FFFF
+    encoded2 = combined & mask_19bit
+    encoded1 = (combined >> 19) & mask_19bit
+
+    # Extract x and y for each pair
+    x1 = (encoded1 >> 9) & 0x3FF  # 10 bits for x
+    y1 = encoded1 & 0x1FF         # 9 bits for y
+    x2 = (encoded2 >> 9) & 0x3FF
+    y2 = encoded2 & 0x1FF
+    return (x1, y1, x2, y2)
+
+# Example usage
+x1, y1 = 512, 300
+x2, y2 = 128, 200
+encoded_bytes = encode_two_coordinates(x1, y1, x2, y2)
+print("Encoded bytes:", encoded_bytes)
+
+decoded_x1, decoded_y1, decoded_x2, decoded_y2 = decode_two_coordinates(encoded_bytes)
+print("Decoded coordinates:", decoded_x1, decoded_y1, decoded_x2, decoded_y2)
